@@ -42,8 +42,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'app.apps.AppConfig',
-    'django_cleanup.apps.CleanupConfig',
     'django_filters',
+    'django_cleanup.apps.CleanupConfig',
+
 ]
 
 MIDDLEWARE = [

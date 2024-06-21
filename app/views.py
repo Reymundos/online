@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status, filters
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
-
+from django.contrib.auth.models import User
 from .models import (Course, CourseThema, Comment, News, Video, LikeDislike)
 from .serializer import (CourseSerializer, CourseThemaSerializer, CommentSerializer, NewsSerializer, VideoSerializer, LikeDislikeSerializer)
 
@@ -66,32 +66,44 @@ class LikeDislikeAPIListCreateView(GenericAPIView):
     serializer_class = LikeDislikeSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
-    # def post(self, request, *args, **kwargs):
-    #     course_thema_id = self.kwargs.get('course_thema_id')
-    #     vote = request.data.get('vote')
-    #     user = request.user
-    #
-    #     # course_thema obyektini olish yoki 404 qaytarish
-    #     course_thema = get_object_or_404(CourseThema, id=course_thema_id)
-    #
-    #     # vote qiymatini tekshirish
-    #     if vote not in [LikeDislike.LIKE, LikeDislike.DISLIKE]:
-    #         return Response({"message": "Invalid vote value"}, status=status.HTTP_400_BAD_REQUEST)
-    #
-    #     like_dislike, created = LikeDislike.objects.get_or_create(user=user, course_thema=course_thema)
-    #
-    #     if not created:
-    #         if like_dislike.vote == vote:
-    #             like_dislike.delete()
-    #             return Response({"message": "Vote removed"}, status=status.HTTP_204_NO_CONTENT)
-    #         else:
-    #             like_dislike.vote = vote
-    #             like_dislike.save()
-    #             return Response({"message": "Vote updated"}, status=status.HTTP_200_OK)
-    #     else:
-    #         like_dislike.vote = vote
-    #         like_dislike.save()
-    #         return Response({"message": "Vote added"}, status=status.HTTP_201_CREATED)
+    def post(self, request, *args, **kwargs):
+        course_thema_id = request.data.get('course_thema')
+        vote = request.data.get('vote')
+        user = User.objects.get(pk=request.data.get('user'))
+
+        # course_thema obyektini olish yoki 404 qaytarish
+        course_thema = get_object_or_404(CourseThema, id=course_thema_id)
+
+        try:
+            like_dislike = LikeDislike.objects.get(user=user, course_thema=course_thema)
+        except:
+            like_dislike = None
+
+        if like_dislike:
+            if like_dislike.vote == vote:
+                like_dislike.delete()
+                return Response({"message": "Vote removed"}, status=status.HTTP_204_NO_CONTENT)
+            else:
+                like_dislike.vote = vote
+                like_dislike.save()
+                return Response({"message": "Vote updated"}, status=status.HTTP_200_OK)
+        else:
+            data = {
+                "user": user.pk,
+                "course_thema": course_thema.pk,
+                "vote": vote
+            }
+            serializer = LikeDislikeSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Vote added"}, status=status.HTTP_201_CREATED)
+            print(serializer.errors)
+        return Response({"message": "Not Created."})
+
+    def get(self, request):
+        likes = LikeDislike.objects.all()
+        serializer = LikeDislikeSerializer(likes, many=True)
+        return Response({'data': serializer.data})
 
 
 class LikeDislikeAPIGetUpdateDeleteView(RetrieveUpdateDestroyAPIView):

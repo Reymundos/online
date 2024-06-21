@@ -54,10 +54,14 @@ class Comment(models.Model):
 
 class LikeDislike(models.Model):
     """darsni baholash uchun model"""
+    LIKE = 1
+    MIDDLE = 0
+    DISLIKE = -1
 
     VOTE_CHOICES = (
-        ('LIKE', 'Like'),
-        ('DISLIKE', 'Dislike'),
+        (LIKE, 'Like'),
+        (DISLIKE, 'Dislike'),
+        (MIDDLE, 'Middle')
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
